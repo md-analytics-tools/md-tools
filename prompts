@@ -1,0 +1,12 @@
+
+Let's do this. Keep the appt picker and confirmation box so they can go back and edit their appoitnment time and then go back down to the jotform as needed.
+
+
+
+So after a few seconds of pressing the appt picker confirmation, the view scrolls down to jotform. The confirmation button is out of view. Great behavior.
+
+However, then the confirmation disappears and there's white space where the time slots were.
+
+Let's do this instead. On confirmation: The confirmation box should stay in the form with the correct time, and a button should show "Choose another time". The appt-picker calendar disappears. The jotform shows up below the confirmation button. The form scrolls to the top of the jotform.
+
+If the user scrolls up and clicks on "Choose another time", the confirmation disappears, and the time slot view shows up again, pushing the jotform further down. Once the user selects another time, and then you go back up to "On Confirmation" above.

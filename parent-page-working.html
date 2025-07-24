@@ -1,0 +1,144 @@
+<!-- definitely working -->
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <title>Appointment Booking</title>
+
+  <link rel="stylesheet" href="https://use.typekit.net/tvp8kst.css" />
+
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      overflow-x: hidden;
+      font-family: sans-serif;
+    }
+
+    /* global iframe styling (mobile-unified for all screens) */
+    .appointment-iframe {
+      width: 100% !important;
+      max-width: 100% !important;
+      border: none !important;
+      overflow: hidden;
+      display: block !important;
+      transition: height 0.3s ease;
+      margin: 0 -15px !important;
+      padding: 0 !important;
+      box-sizing: border-box !important;
+      vertical-align: top !important;
+    }
+
+    .form-container {
+      position: relative;
+      width: 100%;
+      margin: 0;
+      padding: 0;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- appointment picker -->
+  <iframe
+    id="appointmentFrame"
+    class="appointment-iframe"
+    src="https://md-analytics-tools.github.io/mdtools/form-appt-picker-no-script-v3-google.html"
+    frameborder="0"
+    scrolling="no"></iframe>
+
+  <!-- jotform container -->
+  <div class="form-container">
+    <iframe
+      id="contactForm"
+      class="appointment-iframe"
+      src=""
+      frameborder="0"
+      scrolling="no"
+      style="display:none"></iframe>
+  </div>
+
+  <script>
+    /********* refs & state *********/
+    const picker   = document.getElementById("appointmentFrame");
+    const jotform  = document.getElementById("contactForm");
+    const NAV_OFFSET = 120;  // always apply this offset
+    let pickerHeight = null;
+
+    /********* helpers *********/
+    const collapsePicker = px => {
+      picker.style.height = picker.style.maxHeight =
+      picker.style.minHeight = px + "px";
+      picker.style.overflow  = "hidden";
+    };
+    const restorePicker = () => {
+      if (pickerHeight){
+        picker.style.height =
+        picker.style.maxHeight = pickerHeight + "px";
+      } else {
+        picker.style.height =
+        picker.style.maxHeight = "";
+      }
+      picker.style.minHeight = "";
+      picker.style.overflow  = "";
+    };
+    const scrollTo = y => window.scrollTo({top: Math.max(0, y), behavior: "smooth"});
+
+    /********* message bridge *********/
+    window.addEventListener("message", evt => {
+      const d = evt.data;
+
+      // picker reports its height
+      if (d?.type === "pickerHeight") {
+        pickerHeight = +d.value || null;
+        picker.style.height = pickerHeight + "px";
+        return;
+      }
+
+      // jotform reports its height
+      if (typeof d === "string" && d.startsWith("setHeight:")) {
+        const h = +d.split(":")[1];
+        if (!isNaN(h)) jotform.style.height = h + "px";
+        return;
+      }
+
+      switch (d?.type) {
+        case "datePicked":
+        case "timePicked":
+          scrollTo(window.scrollY + d.scrollNeeded - NAV_OFFSET);
+          break;
+
+        /********* picker ⟶ form *********/
+        case "continueToForm": {
+          const bannerH = Math.ceil(d.confirmationBottom) + 20;
+          collapsePicker(bannerH);
+
+          jotform.src = "https://md-analytics-tools.github.io/mdtools/form-contact-with-script.html";
+          jotform.style.display = "block";
+
+          setTimeout(() => {
+            jotform.contentWindow.postMessage({
+              type: "appointmentSelected",
+              data: { label: d.appointment }
+            }, "*");
+          }, 1200);
+
+          const rect = picker.getBoundingClientRect();
+          scrollTo(window.scrollY + rect.top - NAV_OFFSET);
+          break;
+        }
+
+        /********* form ⟶ picker *********/
+        case "chooseAnotherTime":
+          jotform.style.display = "none";
+          jotform.src = "";
+          restorePicker();
+          scrollTo(window.scrollY + d.scrollNeeded - NAV_OFFSET);
+          break;
+      }
+    });
+  </script>
+</body>
+</html>
